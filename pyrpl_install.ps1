@@ -9,7 +9,7 @@ function Check-Installed {
 function Install-Program {
     param ([string]$PackageName)
     Write-Host "Installing $PackageName..." -ForegroundColor Yellow
-    winget install --id $PackageName --silent --accept-source-agreements --accept-package-agreements
+    Start-Process -FilePath "winget" -ArgumentList "install --id $PackageName --silent --accept-source-agreements --accept-package-agreements" -Wait
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to install $PackageName. Check winget or installation errors." -ForegroundColor Red
         exit 1
