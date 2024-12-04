@@ -1,20 +1,35 @@
-# Helper function to check if a program is installed
-function Check-Installed {
-    param ([string]$ProgramName)
-    $found = Get-Command $ProgramName -ErrorAction SilentlyContinue
-    return $found -ne $null
-}
-
-# Helper function to install a program using winget
-function Install-Program {
-    param ([string]$PackageName)
-    Write-Host "Installing $PackageName..." -ForegroundColor Yellow
-    Start-Process -FilePath "winget" -ArgumentList "install --id $PackageName --silent --accept-source-agreements --accept-package-agreements" -Wait
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to install $PackageName. Check winget or installation errors." -ForegroundColor Red
-        exit 1
+# Function to check and install Miniconda and Git using winget
+function Ensure-Dependency {
+    param (
+        [string]$DependencyName,
+        [string]$WingetId
+    )
+    if (Get-Command $DependencyName -ErrorAction SilentlyContinue) {
+        Write-Host "$DependencyName is already installed." -ForegroundColor Green
+    } else {
+        Write-Host "$DependencyName not found. Installing via winget..." -ForegroundColor Yellow
+        Start-Process -FilePath "winget" -ArgumentList "install --id $WingetId --silent --accept-source-agreements --accept-package-agreements" -Wait
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Installation of $DependencyName failed!" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "$DependencyName installation complete." -ForegroundColor Green
     }
 }
+
+
+# Function to create and display SSH key
+function Setup-SSHKey {
+    if (-not (Test-Path "~/.ssh/id_rsa.pub")) {
+        Write-Host "Generating a new SSH key..." -ForegroundColor Yellow
+        Run-GitBashCommand "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
+    } else {
+        Write-Host "SSH key already exists." -ForegroundColor Green
+    }
+    Write-Host "Public Key:" -ForegroundColor Cyan
+    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
+}
+
 
 # Helper function to run a command in Git Bash
 function Run-GitBashCommand {
@@ -104,18 +119,9 @@ function Activate-EnvAndRunSetup {
 }
 
 # Main script workflow
-Write-Host "Step 1: Checking for Miniconda and Git..." -ForegroundColor Cyan
-if (-not (Check-Installed "conda")) {
-    Install-Program "Anaconda.Miniconda3"
-} else {
-    Write-Host "Miniconda is already installed." -ForegroundColor Green
-}
-
-if (-not (Check-Installed "git")) {
-    Install-Program "Git.Git"
-} else {
-    Write-Host "Git is already installed." -ForegroundColor Green
-}
+Write-Host "Step 1: Ensuring Miniconda and Git are installed..." -ForegroundColor Cyan
+Ensure-Dependency -DependencyName "conda" -WingetId "Anaconda.Miniconda3"
+Ensure-Dependency -DependencyName "git" -WingetId "Git.Git"
 
 Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
