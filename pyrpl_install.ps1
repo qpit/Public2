@@ -94,7 +94,7 @@ function Activate-EnvAndRunSetup {
 # Main script workflow
 Write-Host "Step 1: Checking for Miniconda and Git..." -ForegroundColor Cyan
 if (-not (Check-Installed "conda")) {
-    Install-Program "Continuum.Miniconda3"
+    Install-Program "Anaconda.Miniconda3"
 } else {
     Write-Host "Miniconda is already installed." -ForegroundColor Green
 }
