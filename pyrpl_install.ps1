@@ -9,8 +9,9 @@ function Install-Software {
         winget install --id $WingetId --silent --accept-package-agreements
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Did not install $Name" -ForegroundColor Red
-            Read-Host -Prompt "Press any key to continue..."
+            Write-Host "$Name could not be installed." -ForegroundColor Red
+        } else {
+            Write-Host "$Name is now installed." -ForegroundColor Green
         }
     } else {
         Write-Host "$Name is already installed." -ForegroundColor Green
@@ -80,12 +81,20 @@ function Clone-Repo {
 # Function to create and activate a Conda environment
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
+    
+    # Ensure conda is in the path
+    $condaPath = "$env:USERPROFILE\Miniconda3\Scripts\conda.exe"
+    
+    if (-not (Test-Path $condaPath)) {
+        Write-Host "Conda not found at expected location!" -ForegroundColor Red
+        return
+    }
+
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
-    & conda env create -f $EnvFilePath
+    & $condaPath env create -f $EnvFilePath
+    
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
-        Read-Host -Prompt "Press any key to exit..."
-        exit 1
     }
 }
 
