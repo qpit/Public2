@@ -10,7 +10,7 @@ function Install-Software {
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Did not install $Name" -ForegroundColor Red
-            throw "Installation failed"
+            Read-Host -Prompt "Press any key to continue..."
         }
     } else {
         Write-Host "$Name is already installed." -ForegroundColor Green
@@ -111,12 +111,9 @@ function Activate-EnvAndRunSetup {
 
 # Main script workflow
 # Install conda and git using winget
-try {
-    Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
-}
-try {
-    Install-Software -Name "git" -WingetId "Git.Git"
-}
+Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
+Install-Software -Name "git" -WingetId "Git.Git"
+
 
 Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
