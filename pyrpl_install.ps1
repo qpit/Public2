@@ -73,57 +73,25 @@ function Clone-Repo {
 }
 
 # Function to find Anaconda executable
-function Find-CondaPath {
-    # Potential default Conda installation paths
-    $defaultPaths = @(
-        "$env:USERPROFILE\Miniconda3\Scripts\conda.exe",
-        "$env:USERPROFILE\Anaconda3\Scripts\conda.exe", 
-        "$env:ProgramData\Miniconda3\Scripts\conda.exe",
-        "C:\ProgramData\Miniconda3\Scripts\conda.exe",
-        "C:\Program Files\Miniconda3\Scripts\conda.exe"
-    )
-
-    # Check default paths
-    $foundPath = $defaultPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-    if ($foundPath) {
-        Write-Host "Found Conda at: $foundPath" -ForegroundColor Green
-        return $foundPath
-    }
-
-    # Prompt user if not found
-    $manualPath = Read-Host "Conda executable not found. Please provide the full path to conda.exe"
-    
-    if (Test-Path $manualPath) {
-        Write-Host "Manually provided path verified." -ForegroundColor Green
-        return $manualPath
-    }
-
-    Write-Host "Could not locate Conda executable!" -ForegroundColor Red
-    return $null
-}
-
-# Modify the script to use a global variable to store the Conda path
-$global:CondaPath = $null
-
-# Setup-CondaEnv to use the global Conda path
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
     
-    $global:CondaPath = Find-CondaPath
-
-    if (-not $global:CondaPath) {
-        Write-Host "Cannot proceed without Conda executable." -ForegroundColor Red
+    $condaPath = "C:\Users\$([Environment]::UserName)\anaconda3\shell\condabin\conda-hook.ps1"
+    
+    if (-not (Test-Path $condaPath)) {
+        Write-Host "Conda not found at expected location!" -ForegroundColor Red
         return
     }
 
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
-    & $global:CondaPath env create -f $EnvFilePath
+    & $condaPath
+    & conda env create -f $EnvFilePath
     
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to create the Conda environment." -ForegroundColor Red
+        Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
     }
 }
+
 
 # Function to activate Conda environment and run setup.py
 function Activate-EnvAndRunSetup {
