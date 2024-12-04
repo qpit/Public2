@@ -72,7 +72,9 @@ function Clone-Repo {
     }
 }
 
-# Function to find Anaconda executable
+# Setting up Conda environment according to environment file
+
+### TODO: figure out how to use conda-hook.ps1 to make conda accessible
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
     
