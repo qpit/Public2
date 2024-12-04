@@ -9,7 +9,7 @@ function Install-Software {
         winget install --id $WingetId --silent --accept-package-agreements
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install $Name" -ForegroundColor Red
+            Write-Host "Did not install $Name" -ForegroundColor Red
             throw "Installation failed"
         }
     } else {
@@ -83,6 +83,7 @@ function Setup-CondaEnv {
     & conda env create -f $EnvFilePath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
+        Read-Host -Prompt "Press any key to exit..."
         exit 1
     }
 }
@@ -94,6 +95,7 @@ function Activate-EnvAndRunSetup {
     & conda activate $EnvName
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to activate the Conda environment." -ForegroundColor Red
+        Read-Host -Prompt "Press any key to exit..."
         exit 1
     }
 
@@ -102,6 +104,7 @@ function Activate-EnvAndRunSetup {
     & python setup.py develop
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run setup.py. Check dependencies." -ForegroundColor Red
+        Read-Host -Prompt "Press any key to exit..."
         exit 1
     }
 }
@@ -110,9 +113,9 @@ function Activate-EnvAndRunSetup {
 # Install conda and git using winget
 try {
     Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
+}
+try {
     Install-Software -Name "git" -WingetId "Git.Git"
-} catch {
-    Write-Host "An error occurred during installation." -ForegroundColor Red
 }
 
 Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
@@ -121,6 +124,7 @@ Setup-SSHKey
 Write-Host "Step 3: Confirming SSH key setup..." -ForegroundColor Cyan
 if (-not (Confirm-Action "Have you added your SSH key to GitHub and verified access?")) {
     Write-Host "Please add your SSH key and retry." -ForegroundColor Red
+    Read-Host -Prompt "Press any key to exit..."
     exit 1
 }
 
@@ -136,6 +140,7 @@ Write-Host "Step 5: Setting up Conda environment..." -ForegroundColor Cyan
 $envFilePath = Join-Path -Path $repoPath -ChildPath "rp_env.yml"
 if (-not (Test-Path $envFilePath)) {
     Write-Host "Environment file not found: $envFilePath" -ForegroundColor Red
+    Read-Host -Prompt "Press any key to exit..."
     exit 1
 }
 Setup-CondaEnv -EnvFilePath $envFilePath
