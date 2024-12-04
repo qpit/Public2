@@ -72,9 +72,8 @@ function Clone-Repo {
     Write-Host "Cloning repository into: $TargetPath"
     & git clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Git clone failed! Check SSH key and repository access." -ForegroundColor Red
-        Read-Host -Prompt "Press any key to exit..."
-        exit 1
+        Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
+        Read-Host -Prompt "Press any key to continue or terminate the script with 'Ctrl+C'..."
     }
 }
 
