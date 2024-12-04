@@ -1,19 +1,19 @@
-# Function to check and install Miniconda and Git using winget
-function Ensure-Dependency {
+function Install-Software {
     param (
-        [string]$DependencyName,
+        [string]$Name,
         [string]$WingetId
     )
-    if (Get-Command $DependencyName -ErrorAction SilentlyContinue) {
-        Write-Host "$DependencyName is already installed." -ForegroundColor Green
-    } else {
-        Write-Host "$DependencyName not found. Installing via winget..." -ForegroundColor Yellow
-        Start-Process -FilePath "winget" -ArgumentList "install --id $WingetId --silent --accept-source-agreements --accept-package-agreements" -Wait
+    
+    if (!(Get-Command $Name -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing $Name..." -ForegroundColor Yellow
+        winget install --id $WingetId --silent --accept-package-agreements
+        
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Installation of $DependencyName failed!" -ForegroundColor Red
-            exit 1
+            Write-Host "Failed to install $Name" -ForegroundColor Red
+            throw "Installation failed"
         }
-        Write-Host "$DependencyName installation complete." -ForegroundColor Green
+    } else {
+        Write-Host "$Name is already installed." -ForegroundColor Green
     }
 }
 
@@ -40,18 +40,6 @@ function Run-GitBashCommand {
         exit 1
     }
     & $gitBashExe -c $Command
-}
-
-# Function to create and display SSH key
-function Setup-SSHKey {
-    if (-not (Test-Path "~/.ssh/id_rsa.pub")) {
-        Write-Host "Generating a new SSH key..." -ForegroundColor Yellow
-        Run-GitBashCommand "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
-    } else {
-        Write-Host "SSH key already exists." -ForegroundColor Green
-    }
-    Write-Host "Public Key:" -ForegroundColor Cyan
-    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
 }
 
 # Helper function to confirm user action
@@ -119,9 +107,13 @@ function Activate-EnvAndRunSetup {
 }
 
 # Main script workflow
-Write-Host "Step 1: Ensuring Miniconda and Git are installed..." -ForegroundColor Cyan
-Ensure-Dependency -DependencyName "conda" -WingetId "Anaconda.Miniconda3"
-Ensure-Dependency -DependencyName "git" -WingetId "Git.Git"
+# Install conda and git using winget
+try {
+    Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
+    Install-Software -Name "git" -WingetId "Git.Git"
+} catch {
+    Write-Host "An error occurred during installation." -ForegroundColor Red
+}
 
 Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
