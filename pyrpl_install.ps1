@@ -117,15 +117,8 @@ if (-not (Check-Installed "git")) {
     Write-Host "Git is already installed." -ForegroundColor Green
 }
 
-Write-Host "Step 2: Generating SSH key (if needed)..." -ForegroundColor Cyan
-if (-not (Test-Path "~/.ssh/id_rsa.pub")) {
-    Run-GitBashCommand "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
-    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
-    Write-Host "Copy the public key above and add it to your GitHub account. Press Enter when done." -ForegroundColor Yellow
-    Read-Host
-} else {
-    Write-Host "SSH key already exists." -ForegroundColor Green
-}
+Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
+Setup-SSHKey
 
 Write-Host "Step 3: Confirming SSH key setup..." -ForegroundColor Cyan
 if (-not (Confirm-Action "Have you added your SSH key to GitHub and verified access?")) {
