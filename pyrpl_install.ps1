@@ -27,6 +27,18 @@ function Run-GitBashCommand {
     & $gitBashExe -c $Command
 }
 
+# Function to create and display SSH key
+function Setup-SSHKey {
+    if (-not (Test-Path "~/.ssh/id_rsa.pub")) {
+        Write-Host "Generating a new SSH key..." -ForegroundColor Yellow
+        Run-GitBashCommand "ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''"
+    } else {
+        Write-Host "SSH key already exists." -ForegroundColor Green
+    }
+    Write-Host "Public Key:" -ForegroundColor Cyan
+    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
+}
+
 # Helper function to confirm user action
 function Confirm-Action {
     param ([string]$Message)
