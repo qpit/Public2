@@ -37,6 +37,7 @@ function Run-GitBashCommand {
     $gitBashExe = "$($Env:ProgramFiles)\Git\bin\bash.exe"
     if (-not (Test-Path $gitBashExe)) {
         Write-Host "Git Bash executable not found!" -ForegroundColor Red
+        Read-Host -Prompt "Press any key to exit..."
         exit 1
     }
     & $gitBashExe -c $Command
@@ -72,6 +73,7 @@ function Clone-Repo {
     & git clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access." -ForegroundColor Red
+        Read-Host -Prompt "Press any key to exit..."
         exit 1
     }
 }
