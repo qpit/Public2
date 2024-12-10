@@ -85,15 +85,21 @@ function Setup-CondaEnv {
         exit 1
     }
 
-    Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
+    Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
     & $condaPath
+    Write-Host "Activating Conda environment from: C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3" -ForegroundColor Yellow
     & conda activate "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3"
+    Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
     & conda env create -f $EnvFilePath
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
+
+    } else {
+        Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
+        Read-Host -Prompt "Press enter to exit..."
+        exit 1
     }
-    Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
 }
 
 
