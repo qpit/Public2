@@ -73,8 +73,6 @@ function Clone-Repo {
 }
 
 # Setting up Conda environment according to environment file
-
-### TODO: figure out how to use conda-hook.ps1 to make conda accessible
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
     
@@ -85,20 +83,21 @@ function Setup-CondaEnv {
         exit 1
     }
 
+    $condaBaseEnvPath = "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3"
+
     Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
     & $condaPath
-    Write-Host "Activating Conda environment from: C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3" -ForegroundColor Yellow
-    & conda activate "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3"
+    Write-Host "Activating Conda environment from: $condaBaseEnvPath" -ForegroundColor Yellow
+    & conda activate $condaBaseEnvPath
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
-    & conda env create -f $EnvFilePath
+    & conda env create --file=$EnvFilePath
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
-
-    } else {
-        Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
         Read-Host -Prompt "Press enter to exit..."
         exit 1
+    } else {
+        Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
     }
 }
 
@@ -126,6 +125,8 @@ function Activate-EnvAndRunSetup {
 
 # Main script workflow
 # Install conda and git using winget
+
+Write-Host "Step 1: Installing conda and git..." -ForegroundColor Cyan
 Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
 Install-Software -Name "git" -WingetId "Git.Git"
 
