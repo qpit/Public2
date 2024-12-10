@@ -78,14 +78,14 @@ function Clone-Repo {
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
     
-    $condaPath = "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
+    $condaPath = "$HOME\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
     
     if (-not (Test-Path $condaPath)) {
         Write-Host "Conda not found at $condaPath" -ForegroundColor Red
         exit 1
     }
 
-    $condaBaseEnvPath = "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3"
+    $condaBaseEnvPath = Split-Path (Split-Path $condaPath -Parent) -Parent
 
     Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
     & $condaPath
@@ -128,30 +128,30 @@ function Activate-EnvAndRunSetup {
 # Main script workflow
 Read-Host -Prompt "Press enter to start installation..."
 # Install conda and git using winget
-Write-Host "`r=======================================================`rStep 1: Installing conda and git..." -ForegroundColor Cyan
+Write-Host "`r`n=======================================================`r`nStep 1: Installing conda and git..." -ForegroundColor Cyan
 Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
 Install-Software -Name "git" -WingetId "Git.Git"
 
 
-Write-Host "`r=======================================================`rStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
+Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
 
-Write-Host "`r=======================================================`rStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
+Write-Host "`r`n=======================================================`r`nStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
 if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
     Write-Host "Please add your SSH key and retry." -ForegroundColor Red
     Read-Host -Prompt "Press enter to exit..."
     exit 1
 }
 
-Write-Host "`r=======================================================`rStep 4: Setting up project..." -ForegroundColor Cyan
-$defaultPath = "C:\Users\$([Environment]::UserName)\software"
+Write-Host "`r`n=======================================================`r`nStep 4: Setting up project..." -ForegroundColor Cyan
+$defaultPath = [System.IO.Path]::Combine($HOME, "software")
 $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
 $repoUrl = "git@github.com:qpit/pyrpl.git"
 $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
 Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
-Write-Host "`r=======================================================`rStep 5: Setting up Conda environment..." -ForegroundColor Cyan
+Write-Host "`r`n=======================================================`r`nStep 5: Setting up Conda environment..." -ForegroundColor Cyan
 $envFilePath = Join-Path -Path $repoPath -ChildPath "rp_env.yml"
 if (-not (Test-Path $envFilePath)) {
     Write-Host "Environment file not found: $envFilePath" -ForegroundColor Red
@@ -160,7 +160,7 @@ if (-not (Test-Path $envFilePath)) {
 }
 Setup-CondaEnv -EnvFilePath $envFilePath
 
-Write-Host "`r=======================================================`rStep 6: Activating environment and running setup.py..." -ForegroundColor Cyan
+Write-Host "`r`n=======================================================`r`nStep 6: Activating environment and running setup.py..." -ForegroundColor Cyan
 Activate-EnvAndRunSetup -EnvName "rp" -RepoPath $repoPath
 
 Write-Host "`r=======================================================``Setup complete! Repository is ready, and environment is configured." -ForegroundColor Green
