@@ -81,8 +81,8 @@ function Setup-CondaEnv {
     $condaPath = "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
     
     if (-not (Test-Path $condaPath)) {
-        Write-Host "Conda not found at expected location!" -ForegroundColor Red
-        return
+        Write-Host "Conda not found at $condaPath" -ForegroundColor Red
+        exit 1
     }
 
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
@@ -103,9 +103,9 @@ function Activate-EnvAndRunSetup {
     Write-Host "Activating Conda environment: $EnvName" -ForegroundColor Yellow
     & conda activate $EnvName
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to activate the Conda environment." -ForegroundColor Red
+        Write-Host "Failed to activate the Conda environment $EnvName." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
-        return
+        exit 1
     }
 
     Set-Location $RepoPath
@@ -114,7 +114,7 @@ function Activate-EnvAndRunSetup {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run setup.py. Check dependencies." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
-        return
+        exit 1
     }
 }
 
