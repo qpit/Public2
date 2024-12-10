@@ -78,7 +78,7 @@ function Clone-Repo {
 function Setup-CondaEnv {
     param ([string]$EnvFilePath)
     
-    $condaPath = "C:\Users\$([Environment]::UserName)\anaconda3\shell\condabin\conda-hook.ps1"
+    $condaPath = "C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
     
     if (-not (Test-Path $condaPath)) {
         Write-Host "Conda not found at expected location!" -ForegroundColor Red
