@@ -89,8 +89,8 @@ function Setup-CondaEnv {
 
     Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
     & $condaPath
-    Write-Host "Activating Conda environment from: $condaBaseEnvPath" -ForegroundColor Yellow
-    & conda activate $condaBaseEnvPath
+    # Write-Host "Activating Conda environment from: $condaBaseEnvPath" -ForegroundColor Yellow
+    # & conda activate $condaBaseEnvPath
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
     & conda env create --file=$EnvFilePath
     
@@ -163,4 +163,4 @@ Setup-CondaEnv -EnvFilePath $envFilePath
 Write-Host "`r`n=======================================================`r`nStep 6: Activating environment and running setup.py..." -ForegroundColor Cyan
 Activate-EnvAndRunSetup -EnvName "rp" -RepoPath $repoPath
 
-Write-Host "`r=======================================================``Setup complete! Repository is ready, and environment is configured." -ForegroundColor Green
+Write-Host "`r`n=======================================================`r`nSetup complete! Repository is ready, and environment is configured." -ForegroundColor Green
