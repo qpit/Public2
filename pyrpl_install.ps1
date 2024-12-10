@@ -93,6 +93,7 @@ function Setup-CondaEnv {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
     }
+    Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
 }
 
 
@@ -104,7 +105,7 @@ function Activate-EnvAndRunSetup {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to activate the Conda environment." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
-        exit 1
+        return
     }
 
     Set-Location $RepoPath
@@ -113,7 +114,7 @@ function Activate-EnvAndRunSetup {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run setup.py. Check dependencies." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
-        exit 1
+        return
     }
 }
 
