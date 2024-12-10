@@ -8,7 +8,7 @@ function Install-Software {
         Write-Host "Installing $Name..." -ForegroundColor Yellow
         winget install --id $WingetId --silent --accept-package-agreements
     } else {
-        Write-Host "$Name is already installed." -ForegroundColor Green
+        Write-Host "$Name is already installed." -ForegroundColor Yellow
     }
 }
 
@@ -69,6 +69,8 @@ function Clone-Repo {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
         Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
+    } else {
+        Write-Host "Repository cloned successfully!" -ForegroundColor Green
     }
 }
 
@@ -97,7 +99,7 @@ function Setup-CondaEnv {
         Read-Host -Prompt "Press enter to exit..."
         exit 1
     } else {
-        Write-Host "Conda rp environment created successfully!" -ForegroundColor Green
+        Write-Host "Conda 'rp' environment created successfully!" -ForegroundColor Green
     }
 }
 
@@ -124,24 +126,24 @@ function Activate-EnvAndRunSetup {
 }
 
 # Main script workflow
+Read-Host -Prompt "Press enter to start installation..."
 # Install conda and git using winget
-
-Write-Host "Step 1: Installing conda and git..." -ForegroundColor Cyan
+Write-Host "`r=======================================================`rStep 1: Installing conda and git..." -ForegroundColor Cyan
 Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
 Install-Software -Name "git" -WingetId "Git.Git"
 
 
-Write-Host "Step 2: Generating or displaying SSH key..." -ForegroundColor Cyan
+Write-Host "`r=======================================================`rStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
 
-Write-Host "Step 3: Confirming SSH key setup..." -ForegroundColor Cyan
-if (-not (Confirm-Action "Have you added your SSH key to GitHub and verified access?")) {
+Write-Host "`r=======================================================`rStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
+if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
     Write-Host "Please add your SSH key and retry." -ForegroundColor Red
     Read-Host -Prompt "Press enter to exit..."
     exit 1
 }
 
-Write-Host "Step 4: Setting up project..." -ForegroundColor Cyan
+Write-Host "`r=======================================================`rStep 4: Setting up project..." -ForegroundColor Cyan
 $defaultPath = "C:\Users\$([Environment]::UserName)\software"
 $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
@@ -149,7 +151,7 @@ $repoUrl = "git@github.com:qpit/pyrpl.git"
 $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
 Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
-Write-Host "Step 5: Setting up Conda environment..." -ForegroundColor Cyan
+Write-Host "`r=======================================================`rStep 5: Setting up Conda environment..." -ForegroundColor Cyan
 $envFilePath = Join-Path -Path $repoPath -ChildPath "rp_env.yml"
 if (-not (Test-Path $envFilePath)) {
     Write-Host "Environment file not found: $envFilePath" -ForegroundColor Red
@@ -158,7 +160,7 @@ if (-not (Test-Path $envFilePath)) {
 }
 Setup-CondaEnv -EnvFilePath $envFilePath
 
-Write-Host "Step 6: Activating environment and running setup.py..." -ForegroundColor Cyan
+Write-Host "`r=======================================================`rStep 6: Activating environment and running setup.py..." -ForegroundColor Cyan
 Activate-EnvAndRunSetup -EnvName "rp" -RepoPath $repoPath
 
-Write-Host "Setup complete! Repository is ready, and environment is configured." -ForegroundColor Green
+Write-Host "`r=======================================================``Setup complete! Repository is ready, and environment is configured." -ForegroundColor Green
