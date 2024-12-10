@@ -87,6 +87,7 @@ function Setup-CondaEnv {
 
     Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
     & $condaPath
+    & conda activate 'C:\Users\$([Environment]::UserName)\AppData\Local\miniconda3'
     & conda env create -f $EnvFilePath
     
     if ($LASTEXITCODE -ne 0) {
