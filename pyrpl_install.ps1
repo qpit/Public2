@@ -144,6 +144,7 @@ if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to
 }
 
 Write-Host "`r`n=======================================================`r`nStep 4: Setting up project..." -ForegroundColor Cyan
+Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
 $defaultPath = [System.IO.Path]::Combine($HOME, "software")
 $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
