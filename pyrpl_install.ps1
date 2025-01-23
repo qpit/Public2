@@ -63,7 +63,7 @@ function Create-Folder {
 function Clone-Repo {
     param ([string]$RepoUrl, [string]$TargetPath)
     Write-Host "Cloning repository into: $TargetPath"
-    & git clone $RepoUrl $TargetPath
+    & git -b "python_3-12" clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
         Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
@@ -87,7 +87,7 @@ function Create-CondaEnv {
     & $condaPath
 
     Write-Host "Creating Conda environment: $EnvName" -ForegroundColor Yellow
-    & conda create -n $EnvName python=3.13
+    & conda create -n $EnvName python=3.13 -y
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
@@ -185,7 +185,7 @@ function Install-InCurrentEnv {
     $defaultPath = [System.IO.Path]::Combine($HOME, "software")
     $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
-    $repoUrl = "-b python_3-12 git@github.com:qpit/pyrpl.git"
+    $repoUrl = "git@github.com:qpit/pyrpl.git"
     $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
     Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
