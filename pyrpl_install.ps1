@@ -105,7 +105,6 @@ function Create-CondaEnv {
     }
 }
 
-# Function to build and install the pyrpl package
 function Build-AndInstall-Pyrpl {
     param ([string]$RepoPath)
     Set-Location $RepoPath
@@ -121,19 +120,17 @@ function Build-AndInstall-Pyrpl {
     if ($whlFile) {
         $whlPath = $whlFile.FullName
         Write-Host "Installing Pyrpl package from: $whlPath" -ForegroundColor Yellow
-        & pip install $whlPath
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Pyrpl." -ForegroundColor Red
-            Read-Host -Prompt "Press enter to exit..."
-            exit 1
-        } else {
-            Write-Host "Pyrpl installed successfully!" -ForegroundColor Green
-        }
+        & pip install $whlPath        
     } else {
         Write-Host "Pyrpl wheel file not found in the dist folder." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to exit..."
-        exit 1
     }
+
+    # This Read-Host is now outside the if block
+    if ($LASTEXITCODE -ne 0) { 
+        Write-Host "Failed to install Pyrpl." -ForegroundColor Red
+    }
+    Read-Host -Prompt "Press enter to exit..."
+    exit 1
 }
 
 # Function to perform complete installation
@@ -158,7 +155,7 @@ function Complete-Installation {
     $defaultPath = [System.IO.Path]::Combine($HOME, "software")
     $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
-    $repoUrl = "git@github.com:qpit/pyrpl.git"
+    $repoUrl = "-b branch git@github.com:qpit/pyrpl.git"
     $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
     Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
