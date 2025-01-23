@@ -155,7 +155,7 @@ function Complete-Installation {
     $defaultPath = [System.IO.Path]::Combine($HOME, "software")
     $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
-    $repoUrl = "-b branch git@github.com:qpit/pyrpl.git"
+    $repoUrl = "-b python_3-12 git@github.com:qpit/pyrpl.git"
     $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
     Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
