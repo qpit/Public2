@@ -21,7 +21,7 @@ function Setup-SSHKey {
         Write-Host "SSH key already exists." -ForegroundColor Green
     }
     Write-Host "Public Key:" -ForegroundColor Cyan
-    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
+    Run-GitBashCommand "cat ~/.ssh/id_rsa.pub" # This line displays the public key
 }
 
 # Helper function to run a command in Git Bash
@@ -204,10 +204,9 @@ function Install-InCurrentEnv {
 }
 
 # Main script workflow
-Read-Host -Prompt "Press enter to start installation..."
 
 # Ask the user for installation type
-$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment: "
+$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment"
 
 switch ($installationType) {
     "1" {
@@ -217,7 +216,7 @@ switch ($installationType) {
         Install-InCurrentEnv
     }
     default {
-        Write-Host "Invalid choice. Please select '1' or '2'." -ForegroundColor Red
+        Write-Host "Invalid choice. Please select 1 or 2." -ForegroundColor Red
         exit 1
     }
 }
