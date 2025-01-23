@@ -63,7 +63,7 @@ function Create-Folder {
 function Clone-Repo {
     param ([string]$RepoUrl, [string]$TargetPath)
     Write-Host "Cloning repository into: $TargetPath"
-    & git clone -b "python_3-12" $RepoUrl $TargetPath
+    & git clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
         Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
@@ -87,7 +87,7 @@ function Create-CondaEnv {
     & $condaPath
 
     Write-Host "Creating Conda environment: $EnvName" -ForegroundColor Yellow
-    & conda create -n $EnvName python=3.13 -y
+    & conda create -n $EnvName python=3.13
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
@@ -136,39 +136,90 @@ function Build-AndInstall-Pyrpl {
     }
 }
 
+# Function to perform complete installation
+function Complete-Installation {
+    # Install conda and git using winget
+    Write-Host "`r`n=======================================================`r`nStep 1: Installing conda and git..." -ForegroundColor Cyan
+    Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
+    Install-Software -Name "git" -WingetId "Git.Git"
+
+    Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
+    Setup-SSHKey
+
+    Write-Host "`r`n=======================================================`r`nStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
+    if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
+        Write-Host "Please add your SSH key and retry." -ForegroundColor Red
+        Read-Host -Prompt "Press enter to exit..."
+        exit 1
+    }
+
+    Write-Host "`r`n=======================================================`r`nStep 4: Setting up project..." -ForegroundColor Cyan
+    Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
+    $defaultPath = [System.IO.Path]::Combine($HOME, "software")
+    $softwareFolder = Create-Folder -DefaultPath $defaultPath
+
+    $repoUrl = "git@github.com:qpit/pyrpl.git"
+    $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
+    Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
+
+    Write-Host "`r`n=======================================================`r`nStep 5: Setting up Conda environment..." -ForegroundColor Cyan
+    $envName = Read-Host "Enter the name for the Conda environment (default: rp): "
+    if ($envName -eq "") { $envName = "rp" }
+    Create-CondaEnv -EnvName $envName
+
+    Write-Host "`r`n=======================================================`r`nStep 6: Building and installing Pyrpl..." -ForegroundColor Cyan
+    Build-AndInstall-Pyrpl -RepoPath $repoPath
+}
+
+# Function to install pyrpl in current environment
+function Install-InCurrentEnv {
+    Write-Host "`r`n=======================================================`r`nStep 1: Generating or displaying SSH key..." -ForegroundColor Cyan
+    Setup-SSHKey
+
+    Write-Host "`r`n=======================================================`r`nStep 2: Confirming SSH key setup..." -ForegroundColor Cyan
+    if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
+        Write-Host "Please add your SSH key and retry." -ForegroundColor Red
+        Read-Host -Prompt "Press enter to exit..."
+        exit 1
+    }
+
+    Write-Host "`r`n=======================================================`r`nStep 3: Setting up project..." -ForegroundColor Cyan
+    Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
+    $defaultPath = [System.IO.Path]::Combine($HOME, "software")
+    $softwareFolder = Create-Folder -DefaultPath $defaultPath
+
+    $repoUrl = "-b python_3-12 git@github.com:qpit/pyrpl.git"
+    $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
+    Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
+
+    Write-Host "`r`n=======================================================`r`nStep 4: Checking for pip..." -ForegroundColor Cyan
+    if (!(Get-Command pip -ErrorAction SilentlyContinue)) {
+        Write-Host "pip is not available in the current environment." -ForegroundColor Red
+        Read-Host -Prompt "Press enter to exit..."
+        exit 1
+    }
+
+    Write-Host "`r`n=======================================================`r`nStep 5: Building and installing Pyrpl..." -ForegroundColor Cyan
+    Build-AndInstall-Pyrpl -RepoPath $repoPath
+}
+
 # Main script workflow
 Read-Host -Prompt "Press enter to start installation..."
 
-# Install conda and git using winget
-Write-Host "`r`n=======================================================`r`nStep 1: Installing conda and git..." -ForegroundColor Cyan
-Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
-Install-Software -Name "git" -WingetId "Git.Git"
+# Ask the user for installation type
+$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment: "
 
-Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
-Setup-SSHKey
-
-Write-Host "`r`n=======================================================`r`nStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
-if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
-    Write-Host "Please add your SSH key and retry." -ForegroundColor Red
-    Read-Host -Prompt "Press enter to exit..."
-    exit 1
+switch ($installationType) {
+    "1" {
+        Complete-Installation
+    }
+    "2" {
+        Install-InCurrentEnv
+    }
+    default {
+        Write-Host "Invalid choice. Please select '1' or '2'." -ForegroundColor Red
+        exit 1
+    }
 }
-
-Write-Host "`r`n=======================================================`r`nStep 4: Setting up project..." -ForegroundColor Cyan
-Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
-$defaultPath = [System.IO.Path]::Combine($HOME, "software")
-$softwareFolder = Create-Folder -DefaultPath $defaultPath
-
-$repoUrl = "git@github.com:qpit/pyrpl.git"
-$repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
-Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
-
-Write-Host "`r`n=======================================================`r`nStep 5: Setting up Conda environment..." -ForegroundColor Cyan
-$envName = Read-Host "Enter the name for the Conda environment (default: rp): "
-if ($envName -eq "") { $envName = "rp" }
-Create-CondaEnv -EnvName $envName
-
-Write-Host "`r`n=======================================================`r`nStep 6: Building and installing Pyrpl..." -ForegroundColor Cyan
-Build-AndInstall-Pyrpl -RepoPath $repoPath
 
 Write-Host "`r`n=======================================================`r`nSetup complete! Repository is ready, and environment is configured." -ForegroundColor Green
