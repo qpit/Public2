@@ -3,7 +3,7 @@ function Install-Software {
         [string]$Name,
         [string]$WingetId
     )
-    
+
     if (!(Get-Command $Name -ErrorAction SilentlyContinue)) {
         Write-Host "Installing $Name..." -ForegroundColor Yellow
         winget install --id $WingetId --silent --accept-package-agreements
@@ -11,7 +11,6 @@ function Install-Software {
         Write-Host "$Name is already installed." -ForegroundColor Yellow
     }
 }
-
 
 # Function to create and display SSH key
 function Setup-SSHKey {
@@ -24,7 +23,6 @@ function Setup-SSHKey {
     Write-Host "Public Key:" -ForegroundColor Cyan
     Run-GitBashCommand "cat ~/.ssh/id_rsa.pub"
 }
-
 
 # Helper function to run a command in Git Bash
 function Run-GitBashCommand {
@@ -74,39 +72,30 @@ function Clone-Repo {
     }
 }
 
-# Setting up Conda environment according to environment file
-function Setup-CondaEnv {
-    param ([string]$EnvFilePath)
-    
+# Function to create and activate a conda environment
+function Create-CondaEnv {
+    param ([string]$EnvName)
+
     $condaPath = "$HOME\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
-    
+
     if (-not (Test-Path $condaPath)) {
         Write-Host "Conda not found at $condaPath" -ForegroundColor Red
         exit 1
     }
 
-    $condaBaseEnvPath = Split-Path (Split-Path $condaPath -Parent) -Parent
-
     Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
     & $condaPath
-    # Write-Host "Activating Conda environment from: $condaBaseEnvPath" -ForegroundColor Yellow
-    # & conda activate $condaBaseEnvPath
-    Write-Host "Creating Conda environment from: $EnvFilePath" -ForegroundColor Yellow
-    & conda env create --file=$EnvFilePath
-    
+
+    Write-Host "Creating Conda environment: $EnvName" -ForegroundColor Yellow
+    & conda create -n $EnvName python=3.13
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to create the Conda environment. Check the environment file." -ForegroundColor Red
+        Write-Host "Failed to create the Conda environment." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
         exit 1
     } else {
-        Write-Host "Conda 'rp' environment created successfully!" -ForegroundColor Green
+        Write-Host "Conda '$EnvName' environment created successfully!" -ForegroundColor Green
     }
-}
 
-
-# Function to activate Conda environment and run setup.py
-function Activate-EnvAndRunSetup {
-    param ([string]$EnvName, [string]$RepoPath)
     Write-Host "Activating Conda environment: $EnvName" -ForegroundColor Yellow
     & conda activate $EnvName
     if ($LASTEXITCODE -ne 0) {
@@ -114,12 +103,34 @@ function Activate-EnvAndRunSetup {
         Read-Host -Prompt "Press enter to exit..."
         exit 1
     }
+}
 
+# Function to build and install the pyrpl package
+function Build-AndInstall-Pyrpl {
+    param ([string]$RepoPath)
     Set-Location $RepoPath
-    Write-Host "Running python setup.py develop" -ForegroundColor Yellow
-    & python setup.py develop
+    Write-Host "Running python setup.py bdist_wheel" -ForegroundColor Yellow
+    & python setup.py bdist_wheel
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to run setup.py. Check dependencies." -ForegroundColor Red
+        Write-Host "Failed to build the Pyrpl package." -ForegroundColor Red
+        Read-Host -Prompt "Press enter to exit..."
+        exit 1
+    }
+
+    $whlFile = Get-ChildItem -Path "$RepoPath\dist" -Filter "pyrpl-*.whl" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($whlFile) {
+        $whlPath = $whlFile.FullName
+        Write-Host "Installing Pyrpl package from: $whlPath" -ForegroundColor Yellow
+        & pip install $whlPath
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to install Pyrpl." -ForegroundColor Red
+            Read-Host -Prompt "Press enter to exit..."
+            exit 1
+        } else {
+            Write-Host "Pyrpl installed successfully!" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "Pyrpl wheel file not found in the dist folder." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
         exit 1
     }
@@ -127,11 +138,11 @@ function Activate-EnvAndRunSetup {
 
 # Main script workflow
 Read-Host -Prompt "Press enter to start installation..."
+
 # Install conda and git using winget
 Write-Host "`r`n=======================================================`r`nStep 1: Installing conda and git..." -ForegroundColor Cyan
 Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
 Install-Software -Name "git" -WingetId "Git.Git"
-
 
 Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
 Setup-SSHKey
@@ -153,15 +164,11 @@ $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
 Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
 Write-Host "`r`n=======================================================`r`nStep 5: Setting up Conda environment..." -ForegroundColor Cyan
-$envFilePath = Join-Path -Path $repoPath -ChildPath "rp_env.yml"
-if (-not (Test-Path $envFilePath)) {
-    Write-Host "Environment file not found: $envFilePath" -ForegroundColor Red
-    Read-Host -Prompt "Press enter to exit..."
-    exit 1
-}
-Setup-CondaEnv -EnvFilePath $envFilePath
+$envName = Read-Host "Enter the name for the Conda environment (default: rp): "
+if ($envName -eq "") { $envName = "rp" }
+Create-CondaEnv -EnvName $envName
 
-Write-Host "`r`n=======================================================`r`nStep 6: Activating environment and running setup.py..." -ForegroundColor Cyan
-Activate-EnvAndRunSetup -EnvName "rp" -RepoPath $repoPath
+Write-Host "`r`n=======================================================`r`nStep 6: Building and installing Pyrpl..." -ForegroundColor Cyan
+Build-AndInstall-Pyrpl -RepoPath $repoPath
 
 Write-Host "`r`n=======================================================`r`nSetup complete! Repository is ready, and environment is configured." -ForegroundColor Green
