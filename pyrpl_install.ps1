@@ -63,7 +63,7 @@ function Create-Folder {
 function Clone-Repo {
     param ([string]$RepoUrl, [string]$TargetPath)
     Write-Host "Cloning repository into: $TargetPath"
-    & git clone -b 'python_3-12' $RepoUrl $TargetPath
+    & git clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
         Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
@@ -155,7 +155,7 @@ function Complete-Installation {
     $defaultPath = [System.IO.Path]::Combine($HOME, "software")
     $softwareFolder = Create-Folder -DefaultPath $defaultPath
 
-    $repoUrl = "-b python_3-12 git@github.com:qpit/pyrpl.git"
+    $repoUrl = "git@github.com:qpit/pyrpl.git"
     $repoPath = Join-Path -Path $softwareFolder -ChildPath "pyrpl"
     Clone-Repo -RepoUrl $repoUrl -TargetPath $repoPath
 
@@ -203,7 +203,7 @@ function Install-InCurrentEnv {
 # Main script workflow
 
 # Ask the user for installation type
-$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment [not recommended]: "
+$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment [not recommended]"
 
 switch ($installationType) {
     "1" {
