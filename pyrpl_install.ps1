@@ -63,7 +63,7 @@ function Create-Folder {
 function Clone-Repo {
     param ([string]$RepoUrl, [string]$TargetPath)
     Write-Host "Cloning repository into: $TargetPath"
-    & git clone -b "python_3-12" $RepoUrl $TargetPath
+    & git clone -b 'python_3-12' $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
         Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
