@@ -143,12 +143,18 @@ function Complete-Installation {
     Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
     Setup-SSHKey
 
-    Write-Host "`r`n=======================================================`r`nStep 3: Confirming SSH key setup..." -ForegroundColor Cyan
-    if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
-        Write-Host "Please add your SSH key and retry." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to exit..."
-        exit 1
-    }
+    Write-Host "`r`n=======================================================`r`nStep 3: Adding SSH key to GitHub..." -ForegroundColor Cyan
+    Write-Host "To allow access to the repository, you need to add your public SSH key to your GitHub account." -ForegroundColor Yellow
+    Write-Host "1. Go to your GitHub settings: https://github.com/settings/keys"
+    Write-Host "2. Click 'New SSH key'."
+    Write-Host "3. Give your key a title (e.g., 'My Laptop')."
+    Write-Host "4. Paste the public key (displayed above) into the 'Key' field."
+    Write-Host "5. Click 'Add SSH key'."
+
+    # Ensure the user is a member of the organization with access to the repository
+    Write-Host "`nPlease also ensure that your GitHub account is a member of the 'qpit' organization and has access to the 'pyrpl' repository." -ForegroundColor Yellow
+
+    Read-Host -Prompt "Press Enter to continue after adding the SSH key and confirming organization membership..."
 
     Write-Host "`r`n=======================================================`r`nStep 4: Setting up project..." -ForegroundColor Cyan
     Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
@@ -173,12 +179,18 @@ function Install-InCurrentEnv {
     Write-Host "`r`n=======================================================`r`nStep 1: Generating or displaying SSH key..." -ForegroundColor Cyan
     Setup-SSHKey
 
-    Write-Host "`r`n=======================================================`r`nStep 2: Confirming SSH key setup..." -ForegroundColor Cyan
-    if (-not (Confirm-Action "Please enter 'y' after you added the public SSH key to your GitHub account. Also ensure that your GitHub account has access to the repository.")) {
-        Write-Host "Please add your SSH key and retry." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to exit..."
-        exit 1
-    }
+    Write-Host "`r`n=======================================================`r`nStep 3: Adding SSH key to GitHub..." -ForegroundColor Cyan
+    Write-Host "To allow access to the repository, you need to add your public SSH key to your GitHub account." -ForegroundColor Yellow
+    Write-Host "1. Go to your GitHub settings: https://github.com/settings/keys"
+    Write-Host "2. Click 'New SSH key'."
+    Write-Host "3. Give your key a title (e.g., 'My Laptop')."
+    Write-Host "4. Paste the public key (displayed above) into the 'Key' field."
+    Write-Host "5. Click 'Add SSH key'."
+
+    # Ensure the user is a member of the organization with access to the repository
+    Write-Host "`nPlease also ensure that your GitHub account is a member of the 'qpit' organization and has access to the 'pyrpl' repository." -ForegroundColor Yellow
+
+    Read-Host -Prompt "Press Enter to continue after adding the SSH key and confirming organization membership..."
 
     Write-Host "`r`n=======================================================`r`nStep 3: Setting up project..." -ForegroundColor Cyan
     Write-Host "If you are being asked if you want to continue connecting, answer 'yes'." -ForegroundColor Yellow
@@ -203,18 +215,17 @@ function Install-InCurrentEnv {
 # Main script workflow
 
 # Ask the user for installation type
-$installationType = Read-Host "Choose installation type: (1) Complete Installation (2) Install in current environment [not recommended]"
+Write-Host "Choose installation type:"
+Write-Host "1. Complete Installation (includes conda, git, and new environment) [Default]" -ForegroundColor Green
+Write-Host "2. Install in current environment (for advanced users only)" -ForegroundColor Yellow
+$installationType = Read-Host "Enter your choice (1 or 2):"
 
 switch ($installationType) {
-    "1" {
-        Complete-Installation
-    }
-    "2" {
+    "2" { # Only if the user explicitly enters '2'
         Install-InCurrentEnv
     }
-    default {
-        Write-Host "Invalid choice. Please select 1 or 2." -ForegroundColor Red
-        exit 1
+    default { # This will include an empty input or any other input besides '2'
+        Complete-Installation
     }
 }
 
