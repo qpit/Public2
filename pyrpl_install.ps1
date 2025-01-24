@@ -216,9 +216,9 @@ function Install-InCurrentEnv {
 
 # Ask the user for installation type
 Write-Host "Choose installation type:"
-Write-Host "1. Complete Installation (includes conda, git, and new environment) [Default]" -ForegroundColor Green
-Write-Host "2. Install in current environment (for advanced users only)" -ForegroundColor Yellow
-$installationType = Read-Host "Enter your choice (1 or 2):"
+Write-Host "1. Complete Installation (includes miniconda, git, and new environment) [Default]" -ForegroundColor Green
+Write-Host "2. Install in current environment (not recommended)" -ForegroundColor Yellow
+$installationType = Read-Host "Enter your choice (1 or 2)"
 
 switch ($installationType) {
     "2" { # Only if the user explicitly enters '2'
@@ -229,4 +229,4 @@ switch ($installationType) {
     }
 }
 
-Write-Host "`r`n=======================================================`r`nSetup complete! Repository is ready, and environment is configured." -ForegroundColor Green
+Write-Host "`r`n=======================================================`r`nSetup complete! Repository is ready, and environment is activated and configured. Remember that this environment needs to be active for pyrpl to work." -ForegroundColor Green
