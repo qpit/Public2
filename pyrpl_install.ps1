@@ -62,6 +62,20 @@ function Create-Folder {
 # Function to clone a Git repository
 function Clone-Repo {
     param ([string]$RepoUrl, [string]$TargetPath)
+
+    # Check if git command is available
+    if (!(Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Host "Error: Git command not found. It seems Git is not correctly installed or not in your PATH." -ForegroundColor Red
+        Write-Host "Please clone the repository manually using the following command:" -ForegroundColor Yellow
+        Write-Host "git clone $RepoUrl '$TargetPath'" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "After cloning, press Enter to continue the script." -ForegroundColor Green
+        Read-Host -Prompt "Waiting for manual clone..."
+        # After manual clone, assume it was successful and continue.
+        Write-Host "Continuing script after manual clone..." -ForegroundColor Green
+        return # Exit the function to prevent the original git clone attempt
+    }
+
     Write-Host "Cloning repository into: $TargetPath"
     & git clone $RepoUrl $TargetPath
     if ($LASTEXITCODE -ne 0) {
