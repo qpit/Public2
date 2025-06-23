@@ -133,30 +133,37 @@ function Create-Folder {
 
 # Function to clone a Git repository
 function Clone-Repo {
-    param ([string]$RepoUrl, [string]$TargetPath)
+    param (
+        [string]$RepoUrl,
+        [string]$TargetPath
+    )
 
-    # Check if git command is available
-    if (!(Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Host "Error: Git clone failed. This may happen if git is not found or a folder with the same name already exists." -ForegroundColor Red
-        Write-Host "Please clone the repository manually using the following command from withing Git Bash:" -ForegroundColor Yellow
-        Write-Host "git clone $RepoUrl '$TargetPath'" -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "After cloning, press Enter to continue the script." -ForegroundColor Green
-        Read-Host -Prompt "Waiting for manual clone..."
-        # After manual clone, assume it was successful and continue.
-        Write-Host "Continuing script after manual clone..." -ForegroundColor Green
-        return # Exit the function to prevent the original git clone attempt
+    # Convert Windows path to Git Bash (MSYS) style, e.g. C:\Users\Foo -> /c/Users/Foo
+    $msysPath = $TargetPath -replace '\\','/'
+    if ($msysPath -match '^([A-Za-z]):/(.+)') {
+        $drive = $matches[1].ToLower()
+        $msysPath = "/$drive/$($matches[2])"
     }
 
-    Write-Host "Cloning repository into: $TargetPath"
-    & git clone $RepoUrl $TargetPath
+    Write-Host "Cloning repository into: $TargetPath" -ForegroundColor Yellow
+
+    # Run clone inside Git Bash
+    Run-GitBashCommand "git clone '$RepoUrl' '$msysPath'"
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Git clone failed! Check SSH key and repository access. In case the local folder already exists under the specified path, please delete it manually and retry." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to continue or terminate the script with 'Ctrl+C'..."
+        Write-Host "Git clone failed inside Git Bash!" -ForegroundColor Red
+        Write-Host "You can try cloning manually in Git Bash with:" -ForegroundColor Yellow
+        Write-Host "    git clone $RepoUrl $msysPath" -ForegroundColor Yellow
+        Read-Host -Prompt "Press Enter after you’ve cloned manually to continue..."
     } else {
         Write-Host "Repository cloned successfully!" -ForegroundColor Green
     }
+
+    # Optionally, set SSH command in the cloned repo
+    # This too runs inside Git Bash so paths are correct:
+    Write-Host "Configuring SSH client for this repo…" -ForegroundColor Yellow
+    Run-GitBashCommand "git -C '$msysPath' config core.sshCommand 'ssh'"
 }
+
 
 
 # Function to create and activate a conda environment
