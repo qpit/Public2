@@ -1,12 +1,13 @@
 function Install-Software {
     param (
         [string]$Name,
-        [string]$WingetId
+        [string]$WingetId,
+        [string]$Version
     )
 
     if (!(Get-Command $Name -ErrorAction SilentlyContinue)) {
         Write-Host "Installing $Name..." -ForegroundColor Yellow
-        winget install --id $WingetId --silent --accept-package-agreements
+        winget install --id $WingetId --silent --accept-package-agreements --version $Version
     } else {
         Write-Host "$Name is already installed." -ForegroundColor Yellow
     }
@@ -24,17 +25,88 @@ function Setup-SSHKey {
     Run-GitBashCommand "cat ~/.ssh/id_rsa.pub" # This line displays the public key
 }
 
-# Helper function to run a command in Git Bash
 function Run-GitBashCommand {
     param ([string]$Command)
-    $gitBashExe = "$($Env:ProgramFiles)\Git\bin\bash.exe"
-    if (-not (Test-Path $gitBashExe)) {
-        Write-Host "Git Bash executable not found!" -ForegroundColor Red
+
+    # Helper to test and return a candidate path if it exists
+    function Get-ValidPath([string]$path) {
+        if (Test-Path $path) {
+            return $path
+        } else {
+            return $null
+        }
+    }
+
+    $candidates = @()
+
+    # 1. Registry key GitForWindows under HKLM
+    try {
+        $lm = Get-ItemProperty -Path 'HKLM:\Software\GitForWindows' -ErrorAction Stop
+        if ($lm.InstallPath) {
+            $p = Join-Path $lm.InstallPath 'bin\bash.exe'
+            Write-Host "[HKLM GitForWindows] candidate: $p"
+            $candidates += $p
+        }
+    } catch {}
+
+    # 2. Registry key GitForWindows under HKCU
+    try {
+        $cu = Get-ItemProperty -Path 'HKCU:\Software\GitForWindows' -ErrorAction Stop
+        if ($cu.InstallPath) {
+            $p = Join-Path $cu.InstallPath 'bin\bash.exe'
+            $candidates += $p
+        }
+    } catch {}
+
+    # 3. Uninstall entry fallback (Git_is1)
+    $uninstKeys = @(
+        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1',
+        'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1',
+        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1'
+    )
+    foreach ($key in $uninstKeys) {
+        try {
+            $u = Get-ItemProperty -Path $key -ErrorAction Stop
+            if ($u.InstallLocation) {
+                $p = Join-Path $u.InstallLocation 'bin\bash.exe'
+                $candidates += $p
+            }
+            elseif ($u.DisplayIcon) {
+                $exe = ($u.DisplayIcon -split '"')[1]
+                $root = Split-Path $exe -Parent
+                $p = Join-Path $root 'bin\bash.exe'
+                $candidates += $p
+            }
+        } catch {}
+    }
+
+    # 4. Well‑known fallback paths
+    $fallbacks = @(
+        "$env:ProgramFiles\Git\bin\bash.exe",
+        "$env:ProgramFiles(x86)\Git\bin\bash.exe",
+        "$env:LocalAppData\Programs\Git\bin\bash.exe"
+    )
+    foreach ($p in $fallbacks) {
+        $candidates += $p
+    }
+
+    # 5. Pick and report the first existing path
+    $gitBashExe = $candidates |
+        ForEach-Object { Get-ValidPath $_ } |
+        Where-Object { $_ } |
+        Select-Object -First 1
+
+    if (-not $gitBashExe) {
+        Write-Host "Git Bash executable not found via any method." -ForegroundColor Red
         Read-Host -Prompt "Press enter to exit..."
         exit 1
     }
+
+    Write-Host "Using Git Bash executable: $gitBashExe" -ForegroundColor Green
     & $gitBashExe -c $Command
 }
+
+
 
 # Helper function to confirm user action
 function Confirm-Action {
@@ -65,8 +137,8 @@ function Clone-Repo {
 
     # Check if git command is available
     if (!(Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Host "Error: Git command not found. It seems Git is not correctly installed or not in your PATH." -ForegroundColor Red
-        Write-Host "Please clone the repository manually using the following command:" -ForegroundColor Yellow
+        Write-Host "Error: Git clone failed. This may happen if git is not found or a folder with the same name already exists." -ForegroundColor Red
+        Write-Host "Please clone the repository manually using the following command from withing Git Bash:" -ForegroundColor Yellow
         Write-Host "git clone $RepoUrl '$TargetPath'" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "After cloning, press Enter to continue the script." -ForegroundColor Green
@@ -86,25 +158,83 @@ function Clone-Repo {
     }
 }
 
+
 # Function to create and activate a conda environment
 function Create-CondaEnv {
     param ([string]$EnvName)
 
-    $condaPath = "$HOME\AppData\Local\miniconda3\shell\condabin\conda-hook.ps1"
+    # 1. Gather all condabin hook paths from registry Uninstall entries
+    $hookPaths = @()
+    $uninstallRoots = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+    )
+    foreach ($root in $uninstallRoots) {
+        Get-ChildItem $root -ErrorAction SilentlyContinue |
+          Get-ItemProperty -ErrorAction SilentlyContinue |
+          Where-Object { $_.DisplayName -match 'Anaconda|Miniconda' } |
+          ForEach-Object {
+              $p = $null # Initialize $p for each loop iteration
+              if ($_.InstallLocation) {
+                  $p = Join-Path $_.InstallLocation 'shell\condabin\conda-hook.ps1'
+                  Write-Host "[Registry InstallLocation] candidate: $p"
+              }
+              elseif ($_.UninstallString) {
+                  # Correctly handle quoted uninstall strings
+                  $exePath = $_.UninstallString
+                  if ($exePath -match '"([^"]+)"') {
+                    $exePath = $matches[1]
+                  }
+                  $installRoot = Split-Path $exePath -Parent
+                  $p = Join-Path $installRoot 'shell\condabin\conda-hook.ps1'
+                  Write-Host "[Registry UninstallString] candidate: $p"
+              }
 
-    if (-not (Test-Path $condaPath)) {
-        Write-Host "Conda not found at $condaPath" -ForegroundColor Red
+              if ($p -and (Test-Path $p)) {
+                  Write-Host "Added valid hook path: $p" -ForegroundColor Green
+                  $hookPaths += $p
+              } else {
+                  if ($p) { # Only write this message if a candidate path was actually formed
+                    Write-Host "Path not found, skipping: $p" -ForegroundColor Yellow
+                  }
+              }
+          }
+    }
+
+    # 2. Pick the best hook path: per-user > localappdata > system
+    $condaPath = $hookPaths |
+      Sort-Object {
+          if ($_ -like "$($env:USERPROFILE)*") {
+              0 # Highest priority for user profile paths
+          }
+          elseif ($_ -like "$($env:LOCALAPPDATA)*") {
+              1 # Second priority for local app data paths
+          }
+          else {
+              2 # Lowest priority for all other (e.g., system) paths
+          }
+      } |
+      Select-Object -First 1
+
+    if ($condaPath) {
+        Write-Host "Using conda hook at: $condaPath" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host 'No valid conda-hook.ps1 found.' -ForegroundColor Red
+        Read-Host -Prompt "Press Enter to exit…"
         exit 1
     }
 
-    Write-Host "Activating Conda hook from: $condaPath" -ForegroundColor Yellow
+    # 3. Activate and create the environment
+    Write-Host "Activating Conda hook..." -ForegroundColor Cyan
     & $condaPath
 
     Write-Host "Creating Conda environment: $EnvName" -ForegroundColor Yellow
     & conda create -n $EnvName python=3.13 -y
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create the Conda environment." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to exit..."
+        Read-Host -Prompt "Press Enter to exit..."
         exit 1
     } else {
         Write-Host "Conda '$EnvName' environment created successfully!" -ForegroundColor Green
@@ -114,10 +244,11 @@ function Create-CondaEnv {
     & conda activate $EnvName
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to activate the Conda environment $EnvName." -ForegroundColor Red
-        Read-Host -Prompt "Press enter to exit..."
+        Read-Host -Prompt "Press Enter to exit..."
         exit 1
     }
 }
+
 
 function Build-AndInstall-Pyrpl {
     param ([string]$RepoPath)
@@ -137,6 +268,7 @@ function Build-AndInstall-Pyrpl {
         & pip install $whlPath        
     } else {
         Write-Host "Pyrpl wheel file not found in the dist folder." -ForegroundColor Red
+        Read-Host -Prompt "Press enter to exit..."
     }
 
     # This Read-Host is now outside the if block
@@ -151,8 +283,8 @@ function Build-AndInstall-Pyrpl {
 function Complete-Installation {
     # Install conda and git using winget
     Write-Host "`r`n=======================================================`r`nStep 1: Installing conda and git..." -ForegroundColor Cyan
-    Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3"
-    Install-Software -Name "git" -WingetId "Git.Git"
+    Install-Software -Name "conda" -WingetId "Anaconda.Miniconda3" -Version py313_25.3.1-1
+    Install-Software -Name "git" -WingetId "Git.Git" -Version 2.42.0.2
 
     Write-Host "`r`n=======================================================`r`nStep 2: Generating or displaying SSH key..." -ForegroundColor Cyan
     Setup-SSHKey
